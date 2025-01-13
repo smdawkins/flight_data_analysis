@@ -23,6 +23,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 
+import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+
+
 
 
 
@@ -33,6 +36,7 @@ public class DataStreamJob {
     public static void main(String[] args) throws Exception {
         // Set up the execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		env.setParallelism(1);
 
         // Kafka consumer properties
         Properties properties = new Properties();
@@ -49,6 +53,10 @@ public class DataStreamJob {
         );
 		
 		env.enableCheckpointing(60000); 
+		// Set restart strategy (3 retries with 10-second delay)
+		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 10000));
+		// Enable exactly-once processing
+		kafkaConsumer.setCommitOffsetsOnCheckpoints(true);
 
         // Add the Kafka consumer as a source
         DataStream<String> stream = env.addSource(kafkaConsumer);
